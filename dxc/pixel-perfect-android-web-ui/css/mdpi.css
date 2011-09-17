@@ -1,0 +1,37 @@
+button {
+  position: relative;
+  height: 48px;
+  padding: 0 4px;
+  margin: 0;
+  box-sizing: border-box;
+
+  font-family: 'Droid Sans', helvetica, arial, sans-serif;
+  font-size: 14px;
+  line-height: 30px;
+
+  background: transparent;
+  border-width: 22px 11px 25px 12px;
+  border-image: url(../images/mdpi/btn_default_normal.png) 22 11 25 12 stretch stretch;
+
+  -webkit-box-sizing: border-box;
+  -webkit-border-image: url(../images/mdpi/btn_default_normal.png) 22 11 25 12 stretch stretch;
+}
+
+button span {
+  position: relative;
+  left: 0;
+  top: -15px;
+}
+
+button:focus {
+  border-image: url(../images/mdpi/btn_default_selected.png) 22 11 25 12 stretch stretch;
+  outline: 0;
+
+  -webkit-border-image: url(../images/mdpi/btn_default_selected.png) 22 11 25 12 stretch stretch;
+}
+
+button:active {
+  border-image: url(../images/mdpi/btn_default_pressed.png) 22 11 25 12 stretch stretch;
+
+  -webkit-border-image: url(../images/mdpi/btn_default_pressed.png) 22 11 25 12 stretch stretch;
+}

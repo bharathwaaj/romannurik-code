@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Density independent button example</title>
+    <link rel="stylesheet" href="css/all.css">
+    <link rel="stylesheet" href="css/hdpi.css" media="only screen and (-webkit-min-device-pixel-ratio:1.5)">
+    <link rel="stylesheet" href="css/mdpi.css" media="only screen and (-webkit-max-device-pixel-ratio:1.0) and (max-device-width:480px)">
+    <meta name="viewport" content="user-scalable=no, width=device-width, target-densitydpi=device-dpi">
+    <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.4.2/jquery.min.js"></script>
+  </head>
+  <body>
+    <button><span>Hello World</span></button>
+
+    <script>
+      $('button')
+        .bind('touchstart', function(e) {
+          $(this).addClass('active');
+          absorbEvent_(e);
+        })
+        .bind('touchend touchcancel', function(e) {
+          $(this).removeClass('active');
+          absorbEvent_(e);
+        });
+
+      function absorbEvent_(event) {
+        var e = event || window.event;
+        e.preventDefault && e.preventDefault();
+        e.stopPropagation && e.stopPropagation();
+        e.cancelBubble = true;
+        e.returnValue = false;
+        return false;
+      }
+    </script>
+  </body>
+</html>
