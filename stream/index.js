@@ -122,7 +122,7 @@ function loadTwitter(callback) {
           via: {
             name: 'Twitter',
             url: 'http://twitter.com/' + TWITTER_SCREEN_NAME +
-                '/status/' + tweet.id
+                '/status/' + tweet.id_str
           },
           body: htmlifyTweetText(tweet.text, tweet.entities || []),
           //http://stackoverflow.com/questions/2611415
