@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 
+// Thanks to Jeff Gilfelt for GitHub AOSP mirror integration!
+
 var _PACKAGE_DOC_URL_REGEX = /http:\/\/d(?:eveloper)?.android.com\/reference\/(.+)\/package-(summary|descr).html/;
 var _PACKAGE_SRC_URL_TEMPLATE = 'http://android.git.kernel.org/?p=$PROJECT;a=tree;f=core/java/$NAME_SLASH';
 
@@ -23,31 +25,79 @@ var _CLASS_SRC_URL_TEMPLATE = 'http://android.git.kernel.org/?p=$PROJECT;a=blob;
 var _CODESEARCH_URL_TEMPLATE = 'http://codesearch.google.com/codesearch?q=package:android.git.kernel.org+file:$NAME_SLASH';
 var _GITGREP_URL_TEMPLATE = 'http://android.git.kernel.org/?p=$PROJET&a=search&h=HEAD&st=grep&s=$QUERY';
 
+var _GITHUB_MIRROR_URL_TEMPLATE = 'https://github.com/android/platform_frameworks_base/blob/master/$TREE/java/$NAME_SLASH';
+
+var _PACKAGE_TREE_MAP = {
+  'android.drm'           : 'drm',
+  'android.drm.mobile1'   : 'media',
+  'android.renderscript'  : 'graphics',
+  'android.graphics'      : 'graphics',
+  'android.icu     '      : 'icu4j',
+  'android.security'      : 'keystore',
+  'android.location'      : 'location',
+  'android.media'         : 'media',
+  'android.mtp'           : 'media',
+  'android.opengl'        : 'opengl',
+  'android.sax'           : 'sax',
+  'android.telephony'     : 'telephony',
+  'android.net.rtp'       : 'voip',
+  'android.net.sip'       : 'voip',
+  'android.net.wifi'      : 'wifi',
+};
+
+var _DEFAULT_TREE = 'core';
+
 var url = window.location.href;
 var appendContent = null;
 
+function trimLastNamePart(s) {
+  return s.replace(/\.[^.]*$/, '');
+}
+
 var m;
 if (m = url.match(_PACKAGE_DOC_URL_REGEX)) {
-  return;
-  // var nameSlash = m[1];
-  // var nameDot = m[1].replace(/\//g, '.');
-  // var project = 'platform/frameworks/base.git';
-  // appendContent = [
-  //     '<p><br><a href="',
-  //     _CODESEARCH_URL_TEMPLATE
-  //         .replace(/\$PROJECT/g, project)
-  //         .replace(/\$NAME_SLASH/g, nameSlash),
-  //     '">Browse Package Source</a></p>'
-  // ].join('');
+  var nameSlash = m[1];
+  var packageName = nameSlash.replace(/\//g, '.');
 
-} else if (m = url.match(_CLASS_DOC_URL_REGEX)) {
-  var nameSlash = m[1].replace(/\..*/, ''); // trim inner classes
-  var nameDot = m[1].replace(/\//g, '.');
-  var project = 'platform/frameworks/base.git';
+  var tree = _DEFAULT_TREE;
+  var tmpPackageName = packageName;
+  while (tmpPackageName) {
+    if (tmpPackageName in _PACKAGE_TREE_MAP) {
+      tree = _PACKAGE_TREE_MAP[tmpPackageName];
+      break;
+    }
+    tmpPackageName = trimLastNamePart(tmpPackageName);
+  }
+
   appendContent = [
       ' (<a href="',
-      _CODESEARCH_URL_TEMPLATE
-          .replace(/\$NAME_SLASH/g, nameSlash + '.java'),
+      _GITHUB_MIRROR_URL_TEMPLATE
+          .replace(/\$TREE/g, tree)
+          .replace(/\$NAME_SLASH/g, nameSlash),
+      '">view source listing</a>)'
+  ].join('');
+
+} else if (m = url.match(_CLASS_DOC_URL_REGEX)) {
+  var nameSlash = m[1];
+  var outerNameSlash = nameSlash.replace(/\..*$/, ''); // trim inner classes
+  var outerNameDot = outerNameSlash.replace(/\//g, '.');
+  var packageName = trimLastNamePart(outerNameDot);
+
+  var tree = _DEFAULT_TREE;
+  var tmpPackageName = packageName;
+  while (tmpPackageName) {
+    if (tmpPackageName in _PACKAGE_TREE_MAP) {
+      tree = _PACKAGE_TREE_MAP[tmpPackageName];
+      break;
+    }
+    tmpPackageName = trimLastNamePart(tmpPackageName);
+  }
+
+  appendContent = [
+      ' (<a href="',
+      _GITHUB_MIRROR_URL_TEMPLATE
+          .replace(/\$TREE/g, tree)
+          .replace(/\$NAME_SLASH/g, outerNameSlash + '.java'),
       '">view source</a>)'
   ].join('');
 
