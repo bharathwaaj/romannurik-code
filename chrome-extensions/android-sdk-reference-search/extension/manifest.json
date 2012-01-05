@@ -1,7 +1,7 @@
 {
   "name": "Android SDK Reference Search",
   "description": "Adds an 'ad' omnibox command and view source links for the Android SDK class and XML references.",
-  "version": "0.2.3",
+  "version": "0.2.4",
   "permissions": [
     "tabs",
     "http://developer.android.com/*"

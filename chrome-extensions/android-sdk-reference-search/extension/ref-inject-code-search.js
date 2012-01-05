@@ -66,6 +66,9 @@ if (m = url.match(_PACKAGE_DOC_URL_REGEX)) {
       tree = _PACKAGE_TREE_MAP[tmpPackageName];
       break;
     }
+    if (!tmpPackageName.match(/\./)) {
+      break;
+    }
     tmpPackageName = trimLastNamePart(tmpPackageName);
   }
 
@@ -88,6 +91,9 @@ if (m = url.match(_PACKAGE_DOC_URL_REGEX)) {
   while (tmpPackageName) {
     if (tmpPackageName in _PACKAGE_TREE_MAP) {
       tree = _PACKAGE_TREE_MAP[tmpPackageName];
+      break;
+    }
+    if (!tmpPackageName.match(/\./)) {
       break;
     }
     tmpPackageName = trimLastNamePart(tmpPackageName);
