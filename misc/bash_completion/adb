@@ -20,6 +20,8 @@ function _adb() {
   local result_xpat
   local adbcmd=${COMP_WORDS[0]}
   local word=${COMP_WORDS[COMP_CWORD]}
+  local eat_trailing_space=''
+  local line=${COMP_LINE}
   local next
 
   local ind=1
@@ -49,13 +51,23 @@ function _adb() {
     fi
   }
 
+  # Complete a remote path -- doesn't work yet (need to figure out how to append slashes
+  # to directories in a way that works on all devices)
+  #function _remote_path() {
+  #  if [[ ${COMP_CWORD} -le $ind ]]; then
+  #    result_names=$(${adbcmd} shell ls / | tr -d '\r' | sed -E 's/(.*)/\/\1/g')
+  #    eat_trailing_space=1
+  #  fi
+  #}
+
   # adb ___
   function _root() {
     # Primary command flow
     if [[ ${COMP_CWORD} -le $ind ]]; then
       read -r -d '' result_names <<EOF
 shell devices install uninstall push pull logcat forward bugreport start-server
-kill-server root reboot reboot-bootloader remount
+kill-server root reboot reboot-bootloader remount wait-for-devices jdwp
+get-serialno get-state
 EOF
     else
       next=${COMP_WORDS[$ind]}
@@ -66,12 +78,29 @@ EOF
         _shell
         ;;
 
+      #pull)
+      #  _remote_path
+      #  ;;
+
       install)
         result_xpat='!*.apk'
         ;;
 
       uninstall)
         _package_name
+        ;;
+
+      forward)
+        _forward
+        ;;
+
+      wait-for-devices)
+        # This gets prepended to other actions
+        _root
+        ;;
+
+      logcat)
+        _logcat
         ;;
 
       *)
@@ -81,10 +110,68 @@ EOF
     fi
   }
 
+  # adb forward ___
+  function _forward() {
+    if [[ ${COMP_CWORD} -le $ind ]]; then
+      if [[ "${COMP_WORDS[$COMP_CWORD]}" =~ ":"$ ]]; then
+        # Workaround for a bug where if "tcp:" is the last word, bash will autocomplete "tcp:tcp:"
+        result_names=''
+      else
+        result_names='tcp: local: dev: jdwp:'
+      fi
+      eat_trailing_space=1
+    else
+      let 'ind += 1'
+      _forward
+    fi
+  }
+
+  # adb logcat ___
+  function _logcat() {
+    if [[ ${COMP_CWORD} -le $ind ]]; then
+      result_names="-v -b -c -d -g -s -f -n -r *:V"
+    else
+      next=${COMP_WORDS[$ind]}
+      let 'ind += 1'
+      case "${next}" in
+        -v)
+          if [[ ${COMP_CWORD} -le $ind ]]; then
+            result_names="brief process tag raw time threadtime long"
+          else
+            let 'ind += 1'
+            _logcat
+          fi
+          ;;
+
+        -b)
+          if [[ ${COMP_CWORD} -le $ind ]]; then
+            result_names="radio events main"
+          else
+            let 'ind += 1'
+            _logcat
+          fi
+          ;;
+
+        -f|-n|-r)
+          if [[ ${COMP_CWORD} -le $ind ]]; then
+            result_xpat='*'
+          else
+            let 'ind += 1'
+            _logcat
+          fi
+          ;;
+
+        *)
+          _logcat
+          ;;
+      esac
+    fi
+  }
+
   # adb shell ___
   function _shell() {
     if [[ ${COMP_CWORD} -le $ind ]]; then
-      result_names="pm am dumpsys"
+      result_names="pm am dumpsys dumpstate monkey dmesg start stop setprop"
     else
       next=${COMP_WORDS[$ind]}
       let 'ind += 1'
@@ -168,8 +255,12 @@ EOF
   if [[ -n "${result_xpat}" ]]; then
     COMPREPLY=($(compgen -f -X "${result_xpat}" -- "${word}"))
   else
-    COMPREPLY=($(compgen -W "${result_names}" -- "${word}"))
+    COMPREPLY=($(compgen -S ' ' -W "${result_names}" -- "${word}"))
+  fi
+
+  if [[ -z ${eat_trailing_space} ]]; then
+    COMPREPLY=("${COMPREPLY[@]/%/ }")
   fi
 }
 
-complete -o default -F _adb adb
+complete -o nospace -o default -F _adb adb
