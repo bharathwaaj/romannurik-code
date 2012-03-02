@@ -47,6 +47,7 @@ function _adb() {
   # Complete a package name.
   function _package_name() {
     if [[ ${COMP_CWORD} -le $ind ]]; then
+      # TODO: for older devices, the "-3" (third party) option isn't available, so just remove it.
       result_names=$(${adbcmd} shell pm list packages -3 | sed s/package://g | tr -d '\r')
     fi
   }
