@@ -1,5 +1,5 @@
 /*
- * Copyright 2011 Google Inc.
+ * Copyright 2012 Google Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,53 +17,49 @@
 // Thanks to Jeff Gilfelt for GitHub AOSP mirror integration!
 
 var _PACKAGE_DOC_URL_REGEX = /http:\/\/d(?:eveloper)?.android.com\/reference\/(.+)\/package-(summary|descr).html/;
-var _PACKAGE_SRC_URL_TEMPLATE = 'http://android.git.kernel.org/?p=$PROJECT;a=tree;f=core/java/$NAME_SLASH';
-
 var _CLASS_DOC_URL_REGEX = /http:\/\/d(?:eveloper)?.android.com\/reference\/(.+).html/;
-var _CLASS_SRC_URL_TEMPLATE = 'http://android.git.kernel.org/?p=$PROJECT;a=blob;f=core/java/$NAME_SLASH.java';
 
-var _CODESEARCH_URL_TEMPLATE = 'http://codesearch.google.com/codesearch?q=package:android.git.kernel.org+file:$NAME_SLASH';
-var _GITGREP_URL_TEMPLATE = 'http://android.git.kernel.org/?p=$PROJET&a=search&h=HEAD&st=grep&s=$QUERY';
+var _GITHUB_MIRROR_URL_TEMPLATE = 'https://github.com/android/$PROJECT/blob/master/$TREE/java/$NAME_SLASH';
 
-var _GITHUB_MIRROR_URL_TEMPLATE = 'https://github.com/android/platform_frameworks_base/blob/master/$TREE/java/$NAME_SLASH';
+var _PACKAGE_MAP = {
+  'android.drm'           : { project:'platform_frameworks_base', tree:'drm' },
+  'android.drm.mobile1'   : { project:'platform_frameworks_base', tree:'media' },
+  'android.renderscript'  : { project:'platform_frameworks_base', tree:'graphics' },
+  'android.graphics'      : { project:'platform_frameworks_base', tree:'graphics' },
+  'android.icu     '      : { project:'platform_frameworks_base', tree:'icu4j' },
+  'android.security'      : { project:'platform_frameworks_base', tree:'keystore' },
+  'android.location'      : { project:'platform_frameworks_base', tree:'location' },
+  'android.media'         : { project:'platform_frameworks_base', tree:'media' },
+  'android.mtp'           : { project:'platform_frameworks_base', tree:'media' },
+  'android.opengl'        : { project:'platform_frameworks_base', tree:'opengl' },
+  'android.sax'           : { project:'platform_frameworks_base', tree:'sax' },
+  'android.telephony'     : { project:'platform_frameworks_base', tree:'telephony' },
+  'android.net.rtp'       : { project:'platform_frameworks_base', tree:'voip' },
+  'android.net.sip'       : { project:'platform_frameworks_base', tree:'voip' },
+  'android.net.wifi'      : { project:'platform_frameworks_base', tree:'wifi' },
 
-var _PACKAGE_TREE_MAP = {
-  'android.drm'           : 'drm',
-  'android.drm.mobile1'   : 'media',
-  'android.renderscript'  : 'graphics',
-  'android.graphics'      : 'graphics',
-  'android.icu     '      : 'icu4j',
-  'android.security'      : 'keystore',
-  'android.location'      : 'location',
-  'android.media'         : 'media',
-  'android.mtp'           : 'media',
-  'android.opengl'        : 'opengl',
-  'android.sax'           : 'sax',
-  'android.telephony'     : 'telephony',
-  'android.net.rtp'       : 'voip',
-  'android.net.sip'       : 'voip',
-  'android.net.wifi'      : 'wifi',
+  'android.support.v4'    : { project:'platform_frameworks_support', tree:'v4' },
+  'android.support.v7'    : { project:'platform_frameworks_support', tree:'v7' },
+  'android.support.v13'   : { project:'platform_frameworks_support', tree:'v13' }
 };
 
+var _DEFAULT_PROJECT = 'platform_frameworks_base';
 var _DEFAULT_TREE = 'core';
-
-var url = window.location.href;
-var appendContent = null;
 
 function trimLastNamePart(s) {
   return s.replace(/\.[^.]*$/, '');
 }
 
-var m;
-if (m = url.match(_PACKAGE_DOC_URL_REGEX)) {
-  var nameSlash = m[1];
-  var packageName = nameSlash.replace(/\//g, '.');
-
-  var tree = _DEFAULT_TREE;
+function getPackageInfo(packageName) {
+  var pi = {
+    project: _DEFAULT_PROJECT,
+    tree: _DEFAULT_TREE
+  };
   var tmpPackageName = packageName;
   while (tmpPackageName) {
-    if (tmpPackageName in _PACKAGE_TREE_MAP) {
-      tree = _PACKAGE_TREE_MAP[tmpPackageName];
+    if (tmpPackageName in _PACKAGE_MAP) {
+      pi.tree = _PACKAGE_MAP[tmpPackageName].tree;
+      pi.project = _PACKAGE_MAP[tmpPackageName].project;
       break;
     }
     if (!tmpPackageName.match(/\./)) {
@@ -71,50 +67,55 @@ if (m = url.match(_PACKAGE_DOC_URL_REGEX)) {
     }
     tmpPackageName = trimLastNamePart(tmpPackageName);
   }
+  return pi;
+}
 
-  appendContent = [
-      ' (<a href="',
-      _GITHUB_MIRROR_URL_TEMPLATE
-          .replace(/\$TREE/g, tree)
-          .replace(/\$NAME_SLASH/g, nameSlash),
-      '">view source listing</a>)'
-  ].join('');
+(function() {
+  var url = window.location.href;
+  var appendContent;
 
-} else if (m = url.match(_CLASS_DOC_URL_REGEX)) {
-  var nameSlash = m[1];
-  var outerNameSlash = nameSlash.replace(/\..*$/, ''); // trim inner classes
-  var outerNameDot = outerNameSlash.replace(/\//g, '.');
-  var packageName = trimLastNamePart(outerNameDot);
+  var m;
+  if (m = url.match(_PACKAGE_DOC_URL_REGEX)) {
+    var nameSlash = m[1];
+    var packageName = nameSlash.replace(/\//g, '.');
 
-  var tree = _DEFAULT_TREE;
-  var tmpPackageName = packageName;
-  while (tmpPackageName) {
-    if (tmpPackageName in _PACKAGE_TREE_MAP) {
-      tree = _PACKAGE_TREE_MAP[tmpPackageName];
-      break;
-    }
-    if (!tmpPackageName.match(/\./)) {
-      break;
-    }
-    tmpPackageName = trimLastNamePart(tmpPackageName);
+    var pi = getPackageInfo(packageName);
+
+    appendContent = [
+        ' (<a href="',
+        _GITHUB_MIRROR_URL_TEMPLATE
+            .replace(/\$PROJECT/g, pi.project)
+            .replace(/\$TREE/g, pi.tree)
+            .replace(/\$NAME_SLASH/g, nameSlash),
+        '">view source listing</a>)'
+    ].join('');
+
+  } else if (m = url.match(_CLASS_DOC_URL_REGEX)) {
+    var nameSlash = m[1];
+    var outerNameSlash = nameSlash.replace(/\..*$/, ''); // trim inner classes
+    var outerNameDot = outerNameSlash.replace(/\//g, '.');
+    var packageName = trimLastNamePart(outerNameDot);
+
+    var pi = getPackageInfo(packageName);
+
+    appendContent = [
+        ' (<a href="',
+        _GITHUB_MIRROR_URL_TEMPLATE
+            .replace(/\$PROJECT/g, pi.project)
+            .replace(/\$TREE/g, pi.tree)
+            .replace(/\$NAME_SLASH/g, outerNameSlash + '.java'),
+        '">view source</a>)'
+    ].join('');
+
   }
 
-  appendContent = [
-      ' (<a href="',
-      _GITHUB_MIRROR_URL_TEMPLATE
-          .replace(/\$TREE/g, tree)
-          .replace(/\$NAME_SLASH/g, outerNameSlash + '.java'),
-      '">view source</a>)'
-  ].join('');
+  if (appendContent) {
+    var appendNode = document.createElement('span');
+    appendNode.innerHTML = appendContent;
 
-}
-
-if (appendContent) {
-  var appendNode = document.createElement('span');
-  appendNode.innerHTML = appendContent;
-
-  document
-      .getElementById('jd-header')
-      .getElementsByTagName('h1')[0]
-      .appendChild(appendNode);
-}
+    document
+        .getElementById('jd-header')
+        .getElementsByTagName('h1')[0]
+        .appendChild(appendNode);
+  }
+})();
