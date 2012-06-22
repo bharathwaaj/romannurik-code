@@ -124,6 +124,19 @@ var XML_DATA = [
 
   { id:++xid, subLabel:"Searchable Resources", label:"<searchable>", link:"guide/topics/search/searchable-config.html#searchable-element", type:"xml" },
   { id:++xid, subLabel:"Searchable Resources", label:"<actionkey>", link:"guide/topics/search/searchable-config.html#actionkey-element", type:"xml" },
+
+  // Fun stuff in android.R.styleable
+  { id:++xid, subLabel:"SyncAdapter", label:"<sync-adapter>", link:"reference/android/R.styleable.html#SyncAdapter", type:"xml" },
+  { id:++xid, subLabel:"AccountAuthenticator", label:"<account-authenticator>", link:"reference/android/R.styleable.html#AccountAuthenticator", type:"xml" },
+  { id:++xid, subLabel:"AccessibilityService", label:"<accessibility-service>", link:"reference/android/R.styleable.html#AccessibilityService", type:"xml" },
+  { id:++xid, subLabel:"DeviceAdmin", label:"<device-admin>", link:"reference/android/R.styleable.html#DeviceAdmin", type:"xml" },
+  { id:++xid, subLabel:"InputExtras", label:"<input-extras>", link:"reference/android/R.styleable.html#InputExtras", type:"xml" },
+  { id:++xid, subLabel:"InputMethod", label:"<input-method>", link:"reference/android/R.styleable.html#InputMethod", type:"xml" },
+  { id:++xid, subLabel:"RecognitionService", label:"<recognition-service>", link:"reference/android/R.styleable.html#RecognitionService", type:"xml" },
+  { id:++xid, subLabel:"SpellChecker", label:"<spell-checker>", link:"reference/android/R.styleable.html#SpellChecker", type:"xml" },
+  { id:++xid, subLabel:"TextToSpeechEngine", label:"<tts-engine>", link:"reference/android/R.styleable.html#TextToSpeechEngine", type:"xml" },
+  { id:++xid, subLabel:"Wallpaper", label:"<wallpaper>", link:"reference/android/R.styleable.html#Wallpaper", type:"xml" },
+  { id:++xid, subLabel:"WallpaperPreviewInfo", label:"<wallpaper-preview>", link:"reference/android/R.styleable.html#WallpaperPreviewInfo", type:"xml" },
 ];
 
 for (var i = 0; i < XML_DATA.length; i++) {
