@@ -121,7 +121,7 @@ function addOverlay(filename, dataUri) {
   var overlay = imgRes.createOverlay({
     position: { x: 0, y: 0 }
   });
-  overlay.setVisible(true);
+  //overlay.setVisible(true);
 
   $('<li>')
       .append($('<button>')
@@ -135,7 +135,7 @@ function addOverlay(filename, dataUri) {
       .append($('<label>')
           .append($('<input>')
               .attr('type', 'checkbox')
-              .attr('checked', 'checked')
+              //.attr('checked', 'checked')
               .click(function() {
                 overlay.setVisible($(this).is(':checked'))
               })
