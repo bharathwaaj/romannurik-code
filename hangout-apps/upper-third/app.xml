@@ -1,0 +1,260 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<Module>
+  <ModulePrefs title="Upper Third">
+    <Require feature="rpc" />
+    <Require feature="views" />
+    <Require feature="locked-domain" />
+  </ModulePrefs>
+<Content type="html"><![CDATA[     
+
+<style>
+  body {
+    padding: 10px;
+  }
+
+  #add-overlay-destination {
+    border: 1px dashed #888;
+    color: #888;
+    padding: 20px;
+    font-weight: bold;
+    border-radius: 5px;
+  }
+
+  .drag-hover #add-overlay-destination {
+    border: 1px dashed blue;
+    color: blue;
+  }
+
+  #overlays {
+    margin: 0;
+    padding: 0;
+  }
+
+  #overlays li {
+    list-style: none;
+    margin: 10px 0 10px 0;
+    user-select: none;
+    -webkit-user-select: none;
+  }
+
+  #overlays li + li {
+    border-top: 1px solid #ccc;
+    padding-top: 10px;
+  }
+
+  #overlays li button {
+    float: right;
+  }
+</style>
+
+<script src="https://hangoutsapi.talkgadget.google.com/hangouts/api/hangout.js?v=1.1"></script>
+<script src="//ajax.googleapis.com/ajax/libs/jquery/1.8.0/jquery.min.js"></script>
+
+<h3>Upper Third</h3>
+
+<div id="add-overlay-destination">
+  Drag a 1280x720 image here to add an overlay
+</div>
+
+<ul id="overlays">
+</ul>
+
+<script>
+function showParticipants() {
+  var participants = gapi.hangout.getParticipants();
+
+  var retVal = '<p>Participants: </p><ul>';
+
+  for (var index in participants) {
+    var participant = participants[index];
+
+    if (!participant.person) {
+      retVal += '<li>A participant not running this app</li>';
+    }
+    retVal += '<li>' + participant.person.displayName + '</li>';
+  }
+
+  retVal += '</ul>';
+
+  var div = document.getElementById('participantsDiv');
+
+  div.innerHTML = retVal;
+}
+
+function init() {
+  $.event.props.push("dataTransfer");
+  gapi.hangout.onApiReady.add(
+      function(eventObj) {
+        if (eventObj.isApiReady) {
+          setupUI();
+        }
+      });
+}
+
+function setupUI() {
+  // Set up drag and drop.
+  $('body')
+      .live('dragover', function(evt) {
+        $(this).addClass('drag-hover');
+        evt.dataTransfer.dropEffect = 'link';
+        evt.preventDefault();
+      })
+      .live('dragleave', function(evt) {
+        $(this).removeClass('drag-hover');
+      })
+      .live('drop', function(evt) {
+        $(this).removeClass('drag-hover');
+        evt.preventDefault();
+        loadImageFromFileList(evt.dataTransfer.files, function(data) {
+          if (data == null) {
+            alert('Invalid overlay file');
+            return;
+          }
+          addOverlay(data.name, data.uri);
+        });
+      });
+}
+
+function addOverlay(filename, dataUri) {
+  var imgRes = gapi.hangout.av.effects.createImageResource(dataUri);
+  console.log(imgRes);
+  var overlay = imgRes.createOverlay({
+    position: { x: 0, y: 0 }
+  });
+  overlay.setVisible(true);
+
+  $('<li>')
+      .append($('<button>')
+          .css('display', 'block')
+          .text('Delete')
+          .click(function() {
+            overlay.setVisible(false)
+            $(this).closest('li').remove();
+          })
+      )
+      .append($('<label>')
+          .append($('<input>')
+              .attr('type', 'checkbox')
+              .attr('checked', 'checked')
+              .click(function() {
+                overlay.setVisible($(this).is(':checked'))
+              })
+          )
+          .append(document.createTextNode(filename))
+      )
+      .appendTo('#overlays');
+}
+
+/**
+ * Loads an image from a data URI. The callback will be called with the <img> once
+ * it loads.
+ */
+function loadImageFromUri(uri, callback) {
+  callback = callback || function(){};
+
+  var img = document.createElement('img');
+  img.src = uri;
+  img.onload = function() {
+    callback(img);
+  };
+  img.onerror = function() {
+    callback(null);
+  }
+}
+
+/**
+ * Loads a set of images (organized by ID). Once all images are loaded, the callback
+ * is triggered with a dictionary of <img>'s, organized by ID.
+ */
+function loadImageResources(images, callback) {
+  var imageResources = {};
+
+  var checkForCompletion_ = function() {
+    for (var id in images) {
+      if (!(id in imageResources))
+        return;
+    }
+    (callback || function(){})(imageResources);
+    callback = null;
+  };
+
+  for (var id in images) {
+    var img = document.createElement('img');
+    img.src = images[id];
+    (function(img, id) {
+      img.onload = function() {
+        imageResources[id] = img;
+        checkForCompletion_();
+      };
+      img.onerror = function() {
+        imageResources[id] = null;
+        checkForCompletion_();
+      }
+    })(img, id);
+  }
+}
+
+/**
+ * Loads the first valid image from a FileList (e.g. drag + drop source), as a data URI. This
+ * method will throw an alert() in case of errors and call back with null.
+ *
+ * @param {FileList} fileList The FileList to load.
+ * @param {Function} callback The callback to fire once image loading is done (or fails).
+ * @return Returns an object containing 'uri' representing the loaded image. There will also be
+ *      a 'name' field indicating the file name, if one is available.
+ */
+function loadImageFromFileList(fileList, callback) {
+  fileList = fileList || [];
+
+  var file = null;
+  for (var i = 0; i < fileList.length; i++) {
+    if (fileList[i].type.toLowerCase().match(/^image\/png/)) {
+      file = fileList[i];
+      break;
+    }
+  }
+
+  if (!file) {
+    alert('Please use a valid screenshot file (PNG format).');
+    callback(null);
+    return;
+  }
+
+  var fileReader = new FileReader();
+
+  // Closure to capture the file information.
+  fileReader.onload = function(e) {
+    callback({
+      uri: e.target.result,
+      name: file.name
+    });
+  };
+  fileReader.onerror = function(e) {
+    switch(e.target.error.code) {
+      case e.target.error.NOT_FOUND_ERR:
+        alert('File not found.');
+        break;
+      case e.target.error.NOT_READABLE_ERR:
+        alert('File is not readable.');
+        break;
+      case e.target.error.ABORT_ERR:
+        break; // noop
+      default:
+        alert('An error occurred reading this file.');
+    }
+    callback(null);
+  };
+  fileReader.onabort = function(e) {
+    alert('File read cancelled.');
+    callback(null);
+  };
+
+  fileReader.readAsDataURL(file);
+}
+
+// Wait for gadget to load.                                                       
+gadgets.util.registerOnLoadHandler(init);
+</script>
+]]>
+</Content>
+</Module>
