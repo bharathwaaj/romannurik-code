@@ -155,7 +155,7 @@ public class MainActivity extends FragmentActivity implements
             mNextButton.setText(mEditingAfterReview
                     ? R.string.review
                     : R.string.next);
-            mNextButton.setBackgroundResource(R.drawable.activatable_item_background);
+            mNextButton.setBackgroundResource(R.drawable.selectable_item_background);
             TypedValue v = new TypedValue();
             getTheme().resolveAttribute(android.R.attr.textAppearanceMedium, v, true);
             mNextButton.setTextAppearance(this, v.resourceId);
