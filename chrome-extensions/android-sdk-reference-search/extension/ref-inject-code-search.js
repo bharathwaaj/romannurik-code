@@ -16,10 +16,35 @@
 
 var _PACKAGE_DOC_URL_REGEX = /http(?:s)?:\/\/d(?:eveloper)?.android.com\/reference\/(.+)\/package-(summary|descr).html/;
 var _CLASS_DOC_URL_REGEX = /http(?:s)?:\/\/d(?:eveloper)?.android.com\/reference\/(.+).html/;
+var _RESOURCE_DOC_URL_REGEX = /http(?:s)?:\/\/d(?:eveloper)?.android.com\/reference\/android\/(R(?:\..+)?).html/;
 
 var _GOOGLESOURCE_URL_TEMPLATE = 'https://android.googlesource.com/$PROJECT/+/refs/heads/master/$TREE/java/$NAME_SLASH';
-
+var _GOOGLESOURCE_RESOURCES_PATH = 'https://android.googlesource.com/platform/frameworks/base/+/refs/heads/master/core/res/res/';
 var _GOOGLESOURCE_SAMPLES_PATH = 'https://android.googlesource.com/platform/development/+/master/samples';
+
+var _RESOURCE_MAP = {
+  'R'               : '',
+  'R.anim'          : 'anim/',
+  'R.animator'      : 'animator/',
+  'R.array'         : 'values/arrays.xml',
+  'R.attr'          : 'values/attrs.xml',
+  'R.bool'          : 'values/bools.xml',
+  'R.color'         : 'values/colors.xml',
+  'R.dimen'         : 'values/dimens.xml',
+  'R.drawable'      : ['drawable/', 'drawable-xhdpi/'],
+  'R.id'            : 'values/ids.xml',
+  'R.integer'       : 'integers.xml',
+  'R.interpolator'  : 'interpolator/',
+  'R.layout'        : 'layout/',
+  'R.menu'          : 'menu/',
+  'R.mipmap'        : ['mipmap-mdpi/', 'mipmap-xxhdpi/'],
+  'R.plurals'       : 'values/strings.xml',
+  'R.raw'           : 'raw/',
+  'R.string'        : 'values/strings.xml',
+  'R.style'         : ['values/styles.xml', 'values/themes.xml'],
+  'R.styleable'     : 'values/attrs.xml',
+  'R.xml'           : 'xml/'
+};
 
 var _PACKAGE_MAP = {
   'java'                  : { project:'platform/libcore',             tree:'luni/src/main' },
@@ -86,6 +111,31 @@ function getPackageInfo(packageName) {
               .replace(/\$NAME_SLASH/g, nameSlash),
           '">view source listing</a>)'
       ].join('');
+    }
+
+  } else if (m = url.match(_RESOURCE_DOC_URL_REGEX)) {
+    var nameSlash = m[1];
+    if (nameSlash in _RESOURCE_MAP) {
+      var destinations = _RESOURCE_MAP[nameSlash];
+      if (!destinations.splice) {
+        // Single string, convert to array
+        destinations = [destinations];
+      }
+      appendContent = ' (';
+      for (var i = 0; i < destinations.length; i++) {
+        var resPath = destinations[i];
+        appendContent += [
+            (i == 0) ? '' : ' &bull; ',
+            '<a href="',
+            _GOOGLESOURCE_RESOURCES_PATH + resPath,
+            '">',
+            (i == 0) ? 'view ' : '',
+            'res/',
+            resPath.replace(/\/$/,''),
+            '</a>'
+        ].join('');
+      }
+      appendContent += ')';
     }
 
   } else if (m = url.match(_CLASS_DOC_URL_REGEX)) {
