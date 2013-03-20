@@ -19,6 +19,8 @@ var _CLASS_DOC_URL_REGEX = /http(?:s)?:\/\/d(?:eveloper)?.android.com\/reference
 
 var _GOOGLESOURCE_URL_TEMPLATE = 'https://android.googlesource.com/$PROJECT/+/refs/heads/master/$TREE/java/$NAME_SLASH';
 
+var _GOOGLESOURCE_SAMPLES_PATH = 'https://android.googlesource.com/platform/development/+/master/samples';
+
 var _PACKAGE_MAP = {
   'java'                  : { project:'platform/libcore',             tree:'luni/src/main' },
   'javax'                 : { project:'platform/libcore',             tree:'luni/src/main' },
@@ -115,4 +117,20 @@ function getPackageInfo(packageName) {
         .getElementsByTagName('h1')[0]
         .appendChild(appendNode);
   }
+
+  // rewrite any direct links to sample code
+  var sampleLinks = document.querySelectorAll('a[href*="/resources/samples"]');
+  for (var i = 0; i < sampleLinks.length; i++) {
+    var link = sampleLinks[i];
+    var codePath = link.href.split('resources/samples')[1];
+    var rootSuffix = 'index.html'; // a rooted sample link
+    var classSuffix = '.html'; // a specific class link, usually in ApiDemos
+    if (codePath.indexOf(rootSuffix) > 0) {
+      codePath = codePath.slice(0, codePath.indexOf(rootSuffix));
+    } else if (classSuffix == codePath.slice(-classSuffix.length)) {
+      codePath = codePath.slice(0, codePath.length - classSuffix.length) + '.java';
+    }
+    link.href = _GOOGLESOURCE_SAMPLES_PATH + codePath;
+  }
+
 })();
