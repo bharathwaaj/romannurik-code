@@ -15,8 +15,13 @@
  */
 
 var OMNIBOX_MAX_RESULTS = 20;
-var REFERENCE_JS_URL = 'https://developer.android.com/reference/lists.js';
-var XML_REF_JS_URL = 'android-xml-ref.js';
+var REFERENCE_JS_URLS = [
+  'https://developer.android.com/reference/lists.js',
+  'https://developer.android.com/reference/gcm_lists.js',
+  'https://developer.android.com/reference/gms_lists.js',
+  'https://developer.android.com/reference/jd_lists.js',
+  'android-xml-ref.js'
+];
 
 
 chrome.omnibox.setDefaultSuggestion({
@@ -31,23 +36,72 @@ chrome.omnibox.setDefaultSuggestion({
  */
 (function init() {
   function _success() {
-    if (!DATA) {
-      _error();
+    if (!DATA || !GMS_DATA || !GCM_DATA) {
+      _error('(some script)');
       return;
     }
 
+    DATA = DATA.concat(GMS_DATA);
+    DATA = DATA.concat(GCM_DATA);
+    DATA = DATA.concat(JD_DATA.map(jdDataToRegularData));
+    DATA = DATA.concat(XML_DATA.map(xmlDataToRegularData));
+
     console.log('Successfully loaded SDK reference JS.');
-    loadScript(XML_REF_JS_URL);
     onScriptsLoaded();
   }
 
-  function _error() {
-    console.error('Failed to load SDK reference JS. Retrying in 5 seconds.');
+  function _error(script) {
+    console.error('Failed to load ' + script + '. Retrying in 5 seconds.');
     window.setTimeout(init, 5000);
   }
 
-  loadScript(REFERENCE_JS_URL, _success, _error);
+  loadScripts(REFERENCE_JS_URLS, _success, _error);
 })();
+
+
+var nextid = 100000;
+
+/**
+ * Creates a standard DATA-like object for something from JD_DATA
+ */
+function jdDataToRegularData(item) {
+  return {
+    id: ++nextid,
+    label: item.label,
+    subLabel: item.type,
+    link: item.link
+  };
+}
+
+
+/**
+ * Creates a standard DATA-like object for something from JD_DATA
+ */
+function xmlDataToRegularData(item) {
+  item.label = item.label.replace(/\</g, '&lt;').replace(/\>/g, '&gt;');
+  return item;
+}
+
+
+/**
+ * Attempts to load a set of JS scripts by adding them to the <head>. Provides
+ * success and error callbacks.
+ */
+function loadScripts(urls, successFn, errorFn) {
+  urls = urls || [];
+  urls = urls.slice(); // clone
+
+  var _loadNext = function() {
+    var url = urls.shift();
+    if (!url) {
+      successFn();
+      return;
+    }
+    loadScript(url, _loadNext, errorFn);
+  };
+
+  _loadNext();
+}
 
 
 /**
@@ -57,6 +111,11 @@ chrome.omnibox.setDefaultSuggestion({
 function loadScript(url, successFn, errorFn) {
   successFn = successFn || function(){};
   errorFn = errorFn || function(){};
+
+  if (!url) {
+    errorFn('(no script)');
+    return;
+  }
 
   var loadComplete = false;
 
@@ -81,12 +140,13 @@ function loadScript(url, successFn, errorFn) {
   scriptNode.onerror = function() {
     if (!loadComplete) {
       loadComplete = true;
-      errorFn();
+      errorFn(url);
     }
   };
 
   headNode.appendChild(scriptNode);
 }
+
 
 /**
  * Second-stage initialization function. This contains all the Omnibox
