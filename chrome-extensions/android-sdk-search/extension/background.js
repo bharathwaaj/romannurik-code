@@ -41,10 +41,11 @@ chrome.omnibox.setDefaultSuggestion({
       return;
     }
 
-    DATA = DATA.concat(GMS_DATA);
-    DATA = DATA.concat(GCM_DATA);
-    DATA = DATA.concat(JD_DATA.map(jdDataToRegularData));
-    DATA = DATA.concat(XML_DATA.map(xmlDataToRegularData));
+    DATA = DATA.map(processReferenceItem)
+    DATA = DATA.concat(GMS_DATA.map(processReferenceItem));
+    DATA = DATA.concat(GCM_DATA.map(processReferenceItem));
+    DATA = DATA.concat(JD_DATA.map(processDocsItem));
+    DATA = DATA.concat(XML_DATA.map(processXmlItem));
 
     console.log('Successfully loaded SDK reference JS.');
     onScriptsLoaded();
@@ -61,13 +62,24 @@ chrome.omnibox.setDefaultSuggestion({
 
 var nextid = 100000;
 
+
 /**
  * Creates a standard DATA-like object for something from JD_DATA
  */
-function jdDataToRegularData(item) {
+function processReferenceItem(item) {
+  item.type = 'ref';
+  return item;
+}
+
+
+/**
+ * Creates a standard DATA-like object for something from JD_DATA
+ */
+function processDocsItem(item) {
   return {
+    type: 'docs',
     id: ++nextid,
-    label: item.label,
+    label: item.label.replace(/&lt;/g, '<').replace(/&gt;/g, '>'),
     subLabel: item.type,
     link: item.link
   };
@@ -77,8 +89,8 @@ function jdDataToRegularData(item) {
 /**
  * Creates a standard DATA-like object for something from JD_DATA
  */
-function xmlDataToRegularData(item) {
-  item.label = item.label.replace(/\</g, '&lt;').replace(/\>/g, '&gt;');
+function processXmlItem(item) {
+  item.type = 'ref.xml';
   return item;
 }
 
@@ -163,51 +175,76 @@ function onScriptsLoaded() {
         return;
   
       suggestFn = suggestFn || function(){};
-      query = query.replace(/(^ +)|( +$)/g, '')
-                   .replace(/\</g, '&lt;')
-                   .replace(/\>/g, '&gt;');
+      query = query.replace(/(^ +)|( +$)/g, '');
+
+      var queryPartsLower = query.toLowerCase().match(/[^\s]+/g) || [];
 
       // Filter all classes/packages.
       var results = [];
+
       for (var i = 0; i < DATA.length; i++) {
-        var s = DATA[i];
-        if (query.length != 0 &&
-            s.label.toLowerCase().indexOf(query.toLowerCase()) != -1) {
-          results.push(s);
+        var result = DATA[i];
+        var textLower = (result.label + ' ' + result.subLabel).toLowerCase();
+        for (var j = 0; j < queryPartsLower.length; j++) {
+          if (!queryPartsLower[j]) {
+            continue;
+          }
+
+          if (textLower.indexOf(queryPartsLower[j]) >= 0) {
+            results.push(result);
+            break;
+          }
         }
       }
 
       // Rank them.
       rankResults(results, query);
 
+      console.clear();
+      for (var i = 0; i < Math.min(20, results.length); i++) {
+        console.log(results[i].__resultScore + '   ' + results[i].label);
+      }
+
       // Add them as omnibox results, with prettyish formatting
       // (highlighting, etc.).
-      var queryLower = query.toLowerCase();
-      var queryAlnumDot = (queryLower.match(/[\&\;\-\w\.]+/) || [''])[0];
-      var queryRE = new RegExp(
-          '(' + queryAlnumDot.replace(/\./g, '\\.') + ')', 'ig');
       var capitalLetterRE = new RegExp(/[A-Z]/);
+      var queryLower = query.toLowerCase();
+      var queryAlnumDotParts = queryLower.match(/[\&\;\-\w\.]+/g) || [''];
+      var queryREs = queryAlnumDotParts.map(function(q) {
+        return new RegExp('(' + q.replace(/\./g, '\\.') + ')', 'ig');
+      });
 
       var omniboxResults = [];
       for (var i = 0; i < OMNIBOX_MAX_RESULTS && i < results.length; i++) {
         var result = results[i];
 
-        // Remove HTML tags from description since omnibox cannot display them.
         var description = result.label;
         var firstCap = description.search(capitalLetterRE);
-        if (firstCap >= 0 && result.type != 'xml') {
+        if (firstCap >= 0 && result.type != 'ref.xml') {
           var newDesc;
-          newDesc = '<dim>' + description.substring(0, firstCap) + '</dim>';
+          newDesc = '%{' + description.substring(0, firstCap) + '}%';
           newDesc += description.substring(firstCap);
           description = newDesc;
         }
 
-        description = description.replace(queryRE, '<match>$1</match>');
-
         var subDescription = result.subLabel || '';
         if (subDescription) {
-          description += ' <dim>(' + subDescription + ')</dim>';
+          description += ' %{(' + subDescription + ')}%';
         }
+
+        for (var j = 0; j < queryREs.length; j++) {
+          description = description.replace(queryREs[j], '%|$1|%');
+        }
+
+        // Remove HTML tags from description since omnibox cannot display them.
+        description = description.replace(/\</g, '&lt;').replace(/\>/g, '&gt;');
+
+        // Convert special markers to Omnibox XML
+        description = description
+            .replace(/\%\{/g, '<dim>')
+            .replace(/\}\%/g, '</dim>')
+            .replace(/\%\|/g, '<match>')
+            .replace(/\|\%/g, '</match>');
 
         omniboxResults.push({
           content: 'https://developer.android.com/' + result.link,
@@ -268,8 +305,7 @@ function countChars(s, c) {
 
 
 /**
- * Ranking function, mostly copied from the Android SDK docs:
- * https://developer.android.com/assets/search_autocomplete.js
+ * Populates matches with ranking data given the query.
  */
 function rankResults(matches, query) {
   query = query || '';
@@ -277,43 +313,62 @@ function rankResults(matches, query) {
 
   // We replace dashes with underscores so dashes aren't treated
   // as word boundaries.
-  var queryLower = query.toLowerCase().replace(/-/g, '_');
-  var queryPart = (queryLower.match(/\w+/) || [''])[0];
-  var partPrefixAlnumRE = new RegExp('\\b' + queryPart);
-  var partExactAlnumRE = new RegExp('\\b' + queryPart + '\\b');
-
-  var _resultScoreFn = function(result) {
-    // scores are calculated based on exact and prefix matches,
-    // and then number of path separators (dots) from the last
-    // match (i.e. favoring classes and deep package names)
-    var score = 1.0;
-    var labelLower = result.label.toLowerCase().replace(/-/g, '_');
-    var t = regexFindLast(labelLower, partExactAlnumRE);
-    if (t >= 0) {
-      // exact part match
-      var partsAfter = countChars(labelLower.substr(t + 1), '.');
-      score *= 200 / (partsAfter + 1);
-    } else {
-      t = regexFindLast(labelLower, partPrefixAlnumRE);
-      if (t >= 0) {
-        // part prefix match
-        var partsAfter = countChars(labelLower.substr(t + 1), '.');
-        score *= 20 / (partsAfter + 1);
-      }
-    }
-
-    return score;
-  };
+  var queryParts = query.replace(/-/g, '_').match(/\w+/g) || [''];
 
   for (var i = 0; i < matches.length; i++) {
-    matches[i].__resultScore = _resultScoreFn(matches[i]) +
-        (matches[i].extraRank || 0) * 200;
+    var totalScore = (matches[i].extraRank || 0) * 200;
+
+    for (var j = 0; j < queryParts.length; j++) {
+      var partialAlnumRE = new RegExp(queryParts[j]);
+      var exactAlnumRE = new RegExp('\\b' + queryParts[j] + '\\b');
+      totalScore += resultMatchScore(exactAlnumRE, partialAlnumRE, j, matches[i]);
+    }
+
+    matches[i].__resultScore = totalScore;
   }
 
-  matches.sort(function(a,b) {
+  matches.sort(function(a, b) {
     var n = b.__resultScore - a.__resultScore;
     if (n == 0) // lexicographical sort if scores are the same
-        n = (a.label < b.label) ? -1 : 1;
+      n = (a.label < b.label) ? -1 : 1;
     return n;
   });
+}
+
+
+/**
+ * Scores an individual match.
+ */
+function resultMatchScore(exactMatchRe, partialMatchRe, order, result) {
+  // scores are calculated based on exact and prefix matches,
+  // and then number of path separators (dots) from the last
+  // match (i.e. favoring classes and deep package names)
+  var score = 1.0;
+  var labelLower = result.label.toLowerCase().replace(/-/g, '_');
+  if (result.type == 'docs') {
+    labelLower += ' ' + result.subLabel;
+  }
+
+  var t = regexFindLast(labelLower, exactMatchRe);
+  if (t >= 0) {
+    // exact part match
+    var partsAfter = countChars(labelLower.substr(t + 1), '.');
+    score *= 60 / (partsAfter + 1);
+  } else {
+    t = regexFindLast(labelLower, partialMatchRe);
+    if (t >= 0) {
+      // partial match
+      var partsAfter = countChars(labelLower.substr(t + 1), '.');
+      score *= 20 / (partsAfter + 1);
+    }
+  }
+
+  if (!result.type.match(/ref/)) {
+    // downgrade non-reference docs
+    score /= 1.5;
+  }
+
+  score /= (1 + order / 2);
+
+  return score;
 }
