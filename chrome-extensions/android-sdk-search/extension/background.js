@@ -25,7 +25,7 @@ var REFERENCE_JS_URLS = [
 
 
 chrome.omnibox.setDefaultSuggestion({
-  description: 'Loading Android SDK reference data...'
+  description: 'Loading Android SDK search data...'
 });
 
 
@@ -313,7 +313,7 @@ function rankResults(matches, query) {
 
   // We replace dashes with underscores so dashes aren't treated
   // as word boundaries.
-  var queryParts = query.replace(/-/g, '_').match(/\w+/g) || [''];
+  var queryParts = query.toLowerCase().replace(/-/g, '_').match(/\w+/g) || [''];
 
   for (var i = 0; i < matches.length; i++) {
     var totalScore = (matches[i].extraRank || 0) * 200;
