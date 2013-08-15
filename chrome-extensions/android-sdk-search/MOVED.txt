@@ -1,0 +1,1 @@
+Moved to https://github.com/romannurik/android-sdk-search-extension
