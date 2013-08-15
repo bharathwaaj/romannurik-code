@@ -1,0 +1,2 @@
+Newer version available here:
+https://android.googlesource.com/platform/developers/samples/android/+/master/ui/actionbar/DoneBar
