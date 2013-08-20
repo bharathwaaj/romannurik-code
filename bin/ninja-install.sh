@@ -14,10 +14,44 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+#!/bin/bash
+
+APKS=()
+COMMAND=i
+
+if [[ -z "$1" ]]; then
+  echo "Usage: $0 [-u] APK..." >&2
+fi
+
+adb devices >/dev/null
+
 while [[ -n "$1" ]]
 do
-  echo "$1"
-  ninja-adb.sh install -r "$1"
-  echo
+  if [[ "$1" == "-u" ]]; then
+    COMMAND=u
+  else
+    APKS=("${APKS[@]}" "$1")
+  fi
   shift
 done
+
+for APK in "${APKS[@]}"; do
+  case $COMMAND in
+    i)
+      echo "Installing $APK..."
+      ninja-adb.sh install -r "$APK"
+      ;;
+
+    u)
+      PACKAGE="$APK"
+      if [[ -f "$PACKAGE" ]]; then
+        PACKAGE=`apk-pkgname "$PACKAGE"`
+        echo "Uninstalling $APK ($PACKAGE)..."
+      else
+        echo "Uninstalling $APK..."
+      fi
+      ninja-adb.sh uninstall "$PACKAGE"
+      ;;
+  esac
+
+  echo
