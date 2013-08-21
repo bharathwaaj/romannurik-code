@@ -1,5 +1,5 @@
 /*
- * Copyright 2012 Roman Nurik + Nick Butcher
+ * Copyright 2013 Google Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,7 +16,6 @@
 
 package com.example.android.scrolltricks;
 
-import android.graphics.Typeface;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
 import android.view.LayoutInflater;
@@ -50,7 +49,7 @@ public class StickyFragment extends Fragment implements ObservableScrollView.Cal
                 new ViewTreeObserver.OnGlobalLayoutListener() {
                     @Override
                     public void onGlobalLayout() {
-                        onScrollChanged();
+                        onScrollChanged(mObservableScrollView.getScrollY());
                     }
                 });
 
@@ -58,8 +57,15 @@ public class StickyFragment extends Fragment implements ObservableScrollView.Cal
     }
 
     @Override
-    public void onScrollChanged() {
-        mStickyView.setTranslationY(
-                Math.max(0, mPlaceholderView.getTop() - mObservableScrollView.getScrollY()));
+    public void onScrollChanged(int scrollY) {
+        mStickyView.setTranslationY(Math.max(mPlaceholderView.getTop(), scrollY));
+    }
+
+    @Override
+    public void onDownMotionEvent() {
+    }
+
+    @Override
+    public void onUpOrCancelMotionEvent() {
     }
 }

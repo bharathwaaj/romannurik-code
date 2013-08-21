@@ -1,5 +1,5 @@
 <!--
-  Copyright 2012 Roman Nurik + Nick Butcher
+  Copyright 2013 Google Inc.
 
   Licensed under the Apache License, Version 2.0 (the "License");
   you may not use this file except in compliance with the License.
@@ -14,12 +14,13 @@
   limitations under the License.
   -->
 
-<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<com.example.android.scrolltricks.ObservableScrollView
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/scroll_view"
     android:layout_width="match_parent"
     android:layout_height="match_parent">
 
-    <com.example.android.scrolltricks.ObservableScrollView
-        android:id="@+id/scroll_view"
+    <FrameLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent">
 
@@ -42,8 +43,8 @@
 
         </LinearLayout>
 
-    </com.example.android.scrolltricks.ObservableScrollView>
+        <TextView android:id="@+id/sticky" style="@style/Item.Sticky" />
 
-    <TextView android:id="@+id/sticky" style="@style/Item.Sticky" />
+    </FrameLayout>
 
-</FrameLayout>
+</com.example.android.scrolltricks.ObservableScrollView>

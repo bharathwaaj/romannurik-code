@@ -1,5 +1,5 @@
 /*
- * Copyright 2012 Roman Nurik + Nick Butcher
+ * Copyright 2013 Google Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,6 +18,7 @@ package com.example.android.scrolltricks;
 
 import android.content.Context;
 import android.util.AttributeSet;
+import android.view.MotionEvent;
 import android.widget.ScrollView;
 
 /**
@@ -34,8 +35,24 @@ public class ObservableScrollView extends ScrollView {
     protected void onScrollChanged(int l, int t, int oldl, int oldt) {
         super.onScrollChanged(l, t, oldl, oldt);
         if (mCallbacks != null) {
-            mCallbacks.onScrollChanged();
+            mCallbacks.onScrollChanged(t);
         }
+    }
+
+    @Override
+    public boolean onTouchEvent(MotionEvent ev) {
+        if (mCallbacks != null) {
+            switch (ev.getActionMasked()) {
+                case MotionEvent.ACTION_DOWN:
+                    mCallbacks.onDownMotionEvent();
+                    break;
+                case MotionEvent.ACTION_UP:
+                case MotionEvent.ACTION_CANCEL:
+                    mCallbacks.onUpOrCancelMotionEvent();
+                    break;
+            }
+        }
+        return super.onTouchEvent(ev);
     }
 
     @Override
@@ -48,6 +65,8 @@ public class ObservableScrollView extends ScrollView {
     }
 
     public static interface Callbacks {
-        public void onScrollChanged();
+        public void onScrollChanged(int scrollY);
+        public void onDownMotionEvent();
+        public void onUpOrCancelMotionEvent();
     }
 }
