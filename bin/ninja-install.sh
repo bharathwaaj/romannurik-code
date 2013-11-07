@@ -55,3 +55,4 @@ for APK in "${APKS[@]}"; do
   esac
 
   echo
+done

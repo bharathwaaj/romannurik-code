@@ -40,6 +40,7 @@ function _adb() {
       return
     else
       # We've already completed a device serial number.
+      adbcmd="${adbcmd} -s ${COMP_WORDS[ind+1]}"
       let 'ind += 2'
     fi
   fi
@@ -155,7 +156,7 @@ EOF
 
         -f|-n|-r)
           if [[ ${COMP_CWORD} -le $ind ]]; then
-            result_xpat='*'
+            result_xpat='!*'
           else
             let 'ind += 1'
             _logcat
@@ -172,7 +173,7 @@ EOF
   # adb shell ___
   function _shell() {
     if [[ ${COMP_CWORD} -le $ind ]]; then
-      result_names="pm am dumpsys dumpstate monkey dmesg start stop setprop"
+      result_names="pm am dumpsys dumpstate monkey dmesg start stop setprop screenrecord"
     else
       next=${COMP_WORDS[$ind]}
       let 'ind += 1'
@@ -183,6 +184,10 @@ EOF
 
         am)
           _shell_am
+          ;;
+
+        screenrecord)
+          _shell_screenrecord
           ;;
 
         dumpsys)
@@ -246,6 +251,15 @@ network_management nfc notification package permission phone power
 samplingprofiler search sensorservice simphonebook sip statusbar
 telephony.registry textservices throttle uimode usagestats usb vibrator
 wallpaper wifi wifip2p window
+EOF
+    fi
+  }
+
+  # adb shell screenrecord ___
+  function _shell_screenrecord() {
+    if [[ ${COMP_CWORD} -le $ind ]]; then
+      read -r -d '' result_names <<EOF
+--help --size --bit-rate --time-limit --rotate --verbose
 EOF
     fi
   }

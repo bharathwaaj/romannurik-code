@@ -14,8 +14,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-if [[ -z "$1" || -z "$2" || -z "$3" ]]; then
-  echo "Usage: $0 <path> <find-regex> <replace-regex>" >&2
+if [[ "$1" == "-f" ]]; then
+  FAKE=1
+  shift
+fi
+
+if [[ -z "$1" || -z "$2" ]]; then
+  echo "Usage: $0 [-f] <path> <find-regex> [<replace-regex>]" >&2
   exit
 fi
 
@@ -31,16 +36,23 @@ function do_rename() {
   cd "$1"
   # Rename directories
   ls -A | while read FILE; do
-    if [ -d ${FILE} ]; then
+    if [ -d "${FILE}" ]; then
       # Visit subdirectory
-      do_rename ${FILE}
+      do_rename "${FILE}"
     fi
     RENAMED=$(echo ${FILE} | sed -E "s@${FIND}@${REPLACE}@g")
-    if [[ ${FILE} == ${RENAMED} ]]; then
+    if [[ "${FILE}" == "${RENAMED}" ]]; then
+      if [[ -n $FAKE ]]; then
+        echo [fake] skipping "${FILE}"
+      fi
       continue
     fi
     # Post-order rename directory or file
-    mv ${FILE} ${RENAMED}
+    if [[ -n $FAKE ]]; then
+      echo [fake] mv "${FILE}" "${RENAMED}"
+    else
+      mv "${FILE}" "${RENAMED}"
+    fi
   done
   cd ..
 }

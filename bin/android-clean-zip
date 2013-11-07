@@ -34,17 +34,21 @@ cp -rf ${DIR_NAME}/ ${TEMP_DIR_NAME}/
 find ${TEMP_DIR_NAME} -iname .DS_Store -exec rm -rf {} \;
 find ${TEMP_DIR_NAME} -iname ._\* -exec rm -rf {} \;
 find ${TEMP_DIR_NAME} -iname .svn -exec rm -rf {} \;
+rm -rf ${TEMP_DIR_NAME}/_*
 rm -rf ${TEMP_DIR_NAME}/.classpath
 rm -rf ${TEMP_DIR_NAME}/.project
 rm -rf ${TEMP_DIR_NAME}/.svn
 rm -rf ${TEMP_DIR_NAME}/.hg
+rm -rf ${TEMP_DIR_NAME}/.idea
 rm -rf ${TEMP_DIR_NAME}/.git
 rm -rf ${TEMP_DIR_NAME}/.gitignore
+rm -rf ${TEMP_DIR_NAME}/.gradle
 rm -rf ${TEMP_DIR_NAME}/art
 rm -rf ${TEMP_DIR_NAME}/out
 rm -rf ${TEMP_DIR_NAME}/gen
-rm -rf ${TEMP_DIR_NAME}/libs
+#rm -rf ${TEMP_DIR_NAME}/libs
 rm -rf ${TEMP_DIR_NAME}/bin
+rm -rf ${TEMP_DIR_NAME}/build
 rm -rf ${TEMP_DIR_NAME}/build.xml
 rm -rf ${TEMP_DIR_NAME}/local.properties
 rm -rf ${TEMP_DIR_NAME}/default.properties
@@ -52,6 +56,7 @@ rm -rf ${TEMP_DIR_NAME}/ant.properties
 rm -rf ${TEMP_DIR_NAME}/project.properties
 rm -rf ${TEMP_DIR_NAME}/build.properties
 rm -rf ${TEMP_DIR_NAME}/proguard.cfg
+rm -rf ${TEMP_DIR_NAME}/proguard-project.txt
 rm -rf ${TEMP_DIR_NAME}/*.ipr
 rm -rf ${TEMP_DIR_NAME}/*.iml
 rm -rf ${TEMP_DIR_NAME}/*.iws
